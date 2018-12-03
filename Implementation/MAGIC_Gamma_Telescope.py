@@ -283,3 +283,38 @@ class DecisionTree:
 
     def error(self, test_data):
         return 1 - self.test(test_data)
+
+###################################################################################################
+
+class Ensembled_DT:
+
+    def __init__(self, train_data):
+        self.M_IG = DecisionTree(train_data, 'IG')
+        self.M_GR = DecisionTree(train_data, 'GR')
+        self.M_VA = DecisionTree(train_data, 'VA')
+
+    def predict(self, test_data):
+
+        predict_IG = self.M_IG.predict(test_data)
+        predict_GR = self.M_GR.predict(test_data)
+        predict_VA = self.M_VA.predict(test_data)
+
+        result = predict_IG + predict_GR + predict_VA
+        result[result < 2] = 0
+        result[result >= 2] = 1
+
+        return result
+
+    def prune(self, prune_data):
+        self.M_IG.prune(prune_data);
+        self.M_GR.prune(prune_data);
+        self.M_VA.prune(prune_data);
+
+    def test(self, test_data):
+        predict = self.predict(test_data)
+        return calAccuracy(predict, test_data)
+
+    def error(self, test_data):
+        return 1 - self.test(test_data)
+
+###################################################################################################
