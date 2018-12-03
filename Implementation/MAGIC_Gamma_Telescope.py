@@ -283,3 +283,116 @@ class DecisionTree:
 
     def error(self, test_data):
         return 1 - self.test(test_data)
+
+###################################################################################################
+
+class Ensembled_DT:
+
+    def __init__(self, train_data):
+        self.M_IG = DecisionTree(train_data, 'IG')
+        self.M_GR = DecisionTree(train_data, 'GR')
+        self.M_VA = DecisionTree(train_data, 'VA')
+
+    def predict(self, test_data):
+
+        predict_IG = self.M_IG.predict(test_data)
+        predict_GR = self.M_GR.predict(test_data)
+        predict_VA = self.M_VA.predict(test_data)
+
+        result = predict_IG + predict_GR + predict_VA
+        result[result < 2] = 0
+        result[result >= 2] = 1
+
+        return result
+
+    def prune(self, prune_data):
+        self.M_IG.prune(prune_data);
+        self.M_GR.prune(prune_data);
+        self.M_VA.prune(prune_data);
+
+    def test(self, test_data):
+        predict = self.predict(test_data)
+        return calAccuracy(predict, test_data)
+
+    def error(self, test_data):
+        return 1 - self.test(test_data)
+
+###################################################################################################
+
+def ten_fold_cross_validation():
+    n_folds = 10
+
+    indices = np.random.permutation(data.shape[0])
+
+    fold_len = int(len(data) / n_folds)
+    maskFold = np.ones(data.shape[0], dtype=bool)
+
+    startIdx = 0
+    endIdx = fold_len
+
+    x = np.zeros(n_folds)
+    y = np.zeros(n_folds)
+
+    for i in range(n_folds):
+
+        if (i == n_folds - 1):
+            endIdx = len(data)
+
+        maskFold[startIdx:endIdx] = False
+        train_data = data[maskFold]
+        test_data = data[~maskFold]
+
+        M_star = Ensembled_DT(train_data)
+
+        err_M_star = M_star.error(test_data)
+
+        M_GI = DecisionTree(train_data, 'GI')
+
+        err_M_GI = M_GI.error(test_data)
+
+        x[i] = err_M_star
+        y[i] = err_M_GI
+
+        # print(err_M_star, " ", err_M_GI)
+
+
+        maskFold[startIdx:endIdx] = True
+        startIdx = endIdx
+        endIdx += fold_len
+
+    x1 = x.mean()
+    x2 = y.mean()
+    var1 = x.var() # s1 = x.std()
+    var2 = y.var() # s2 = y.std()
+
+    t_val = np.abs(x1 - x2) / np.sqrt( (var1 + var2) / n_folds )
+
+    # sig = 0.05
+    # df = 9
+    # from table we have
+
+    critical_value = 2.26
+
+    if (t_val < critical_value):
+        print("There is no statistically significant difference between two classifiers")
+    else:
+        print("There is a statistically significant difference between two classifiers")
+
+###################################################################################################
+
+
+df = pd.read_csv("magic04.data", header=None)
+
+# preprocess
+
+data = df.values
+
+maskH = (data[:,-1] == 'h')
+data[:,-1][maskH] = 0
+
+maskG = (data[:,-1] == 'g')
+data[:,-1][maskG] = 1
+
+###################################################################################################
+
+ten_fold_cross_validation()
