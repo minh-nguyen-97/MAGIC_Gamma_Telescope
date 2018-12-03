@@ -380,6 +380,73 @@ def ten_fold_cross_validation():
 
 ###################################################################################################
 
+def report(pred, label):
+
+    conf_mat = np.zeros([2,2])
+    for i in range(len(pred)):
+        row = int(1-label[i])
+        col = int(1-pred[i])
+        conf_mat[ row ][ col ] += 1
+
+    TP = conf_mat[0][0]
+    FP = conf_mat[1][0]
+    FN = conf_mat[0][1]
+    TN = conf_mat[1][1]
+    P = conf_mat[0].sum()
+    N = conf_mat[1].sum()
+    All = P + N
+
+    print()
+
+    print("\tConfusion matrix : ")
+    print("\t",conf_mat[0])
+    print("\t",conf_mat[1])
+
+    print("\tTP rate : ", TP / P)
+    print("\tFP rate : ", FP / N)
+
+    print("\tAccuracy : ", (TP + TN) / All)
+    print("\tPrecision : ", TP / (TP + FP))
+
+    print("----------------------------------------------------------------------")
+    print()
+
+
+def postPruneForM_GI():
+
+    l = len(data)
+
+    indices = np.random.permutation(data.shape[0])
+
+    train_idx, prune_idx, test_idx = indices[:int(l/3)], indices[int(l/3):int(2*l/3)], indices[int(2*l/3):]
+
+    train_data, prune_data, test_data = data[train_idx,:], data[prune_idx,:], data[ test_idx, :]
+
+    M_GI = DecisionTree(train_data, 'GI')
+
+    label = test_data[:,-1]
+
+    pred = M_GI.predict(test_data)
+
+    print("BEFORE PRUNING : ")
+
+    report(pred, label)
+
+    ###################################################################################################
+
+    M_GI.prune(prune_data)
+
+    ###################################################################################################
+
+    pred = M_GI.predict(test_data)
+
+    print("AFTER PRUNING : ")
+
+    report(pred, label)
+
+
+###################################################################################################
+
 
 df = pd.read_csv("magic04.data", header=None)
 
@@ -396,3 +463,5 @@ data[:,-1][maskG] = 1
 ###################################################################################################
 
 ten_fold_cross_validation()
+
+postPruneForM_GI()
